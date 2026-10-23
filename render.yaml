@@ -1,0 +1,18 @@
+# Runs the authoritative multiplayer server (and can serve the full game).
+# Keep one instance: rooms are held in memory in a single process.
+services:
+  - type: web
+    name: simple-running-game-races
+    runtime: node
+    plan: free
+    autoDeploy: false
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: NODE_ENV
+        value: production
+      - key: ALLOWED_ORIGINS
+        sync: false
