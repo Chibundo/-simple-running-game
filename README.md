@@ -1,6 +1,6 @@
 # Simple Running Game
 
-A cheerful, playable stickman running game with saved solo progression and private, real-time multiplayer races. TypeScript, Vite, self-contained SVG/CSS artwork, and a small Node.js WebSocket server. No accounts, paid services, external credentials, hotlinked assets, or fabricated opponents.
+A playable running game with a human athlete, 3D outdoor worlds, saved solo progression and private, real-time multiplayer races. TypeScript, Vite, Three.js/WebGL, locally generated artwork, and a small Node.js WebSocket server. No accounts, paid services, external credentials, hotlinked assets, or fabricated opponents.
 
 ## Run it
 
@@ -30,7 +30,7 @@ Open port **3001** in your browser. `/health` must return `{"ok":true}`. Use `np
 - At zero energy the runner gets tired, shows a summary, returns to the beginning, and refills to 100/100. Progress survives. Start the next run yourself.
 - Upgrade between completed runs, one speed per click. Earned MPH is never spent. Pausing a run does not make it a completed run.
 - Pause/Resume works in solo mode. Opening a panel pauses and closing it resumes only if it was running. A hidden tab pauses until you explicitly resume. Reloading returns to Ready with saved progression and no offline rewards.
-- Free body colours, hats, glasses, and outfits change appearance only.
+- Free shirt colours, hats, glasses, and outfits change appearance only.
 - Twilight Trails requires both the **10 MPH upgrade** and **100,000 earned MPH**. Worlds have different scenery and no statistical multipliers. Switching worlds retains progress.
 - The device leaderboard ranks up to 20 independent alias profiles in this browser, by lifetime earned MPH, then speed. Equal scores and speeds share rank. Manage profiles with the header's runner button.
 - Settings explains the rules, lets you edit an alias, and contains a confirmation checkbox for resetting only the active profile.
@@ -119,13 +119,19 @@ These implementation assumptions are defaults, **not decisions already confirmed
 
 No emails, dates of birth, or real names are needed. Use aliases. Solo profiles stay on the device; the room server temporarily receives racing aliases, speed, look, and earned MPH to check world eligibility. Tokens are private session credentials. Do not share a browser session or copy its storage if you want independent runners.
 
-Controls support keyboard, mouse, and touch, visible focus, named controls, modal focus wrapping, numeric energy, text lock states, and reduced-motion preferences. The UI fits phone, tablet, and desktop widths. Artwork is authored SVG/CSS, covered by the repository's MIT license. No remote assets or sound permissions are needed.
+Controls support keyboard, mouse, and touch, visible focus, named controls, modal focus wrapping, numeric energy, text lock states, and reduced-motion preferences. The UI fits phone, tablet, and desktop widths. Human models, environment geometry, textures, and SVG portraits are authored in this repository and covered by its MIT license. Three.js is an MIT-licensed dependency. See `ASSETS.md`. No remote assets or sound permissions are needed.
 
-## Scene movement
+## Graphics and scene movement
 
-Clouds, distant mountains, hills, trees, and foreground details scroll at different depths. The road and nearby scenery move clearly even at 1 MPH; faster runners increase the visual pace. Rendering follows active run time and distance, so pausing freezes the scene, resuming continues from the same point, and exhaustion returns it to the beginning. Visual screen distance is deliberately exaggerated and does not change actual metres, energy, or earned MPH. Reduced-motion preferences keep the scenery stationary while gameplay continues.
+The main play world uses a **3D human runner and outdoor landscape**. The human has proportioned anatomy, skin, hair, sportswear, trainers, articulated arms, and two-bone leg placement with ground-contact timing matched to trail movement. Existing colour selections now tint the shirt. Caps, crowns, glasses, scarves and jerseys remain free cosmetic options with no effect on statistics. The human character replaces the original stickman at the user's later request; existing save identifiers and cosmetics remain compatible.
 
-The scene explicitly labels a paused run. Upgrade feedback appears briefly as a toast without pushing the play area down. Existing version-1 profiles, aliases, cosmetics, worlds and progression remain compatible.
+Trees use textured trunks, branching geometry and instanced foliage. Ground, gravel, grass, clouds and moon textures are generated locally in the browser. Terrain has surface detail, fog, daylight/moonlight, and cast shadows. The two worlds have different sky and lighting conditions. No downloaded character models, hotlinked images, paid asset services, or credentials are required.
+
+World movement follows active run time and distance. Pausing freezes the world, resuming continues, and exhaustion returns it to the beginning. Screen travel is deliberately exaggerated and does not alter actual metres, energy or earned MPH. Reduced motion holds the human and scenery still while gameplay continues.
+
+The graphics engine is loaded separately from the game controls and caps rendering at 30 frames/second and device pixel ratio 1.5. It redraws only when needed. Multiplayer lobby/reconnection takes priority: the obscured 3D world is not warmed up or animated while that panel is open. Modern WebGL2-capable browsers render the 3D scene; an animated 2D human/scenery fallback keeps gameplay working if WebGL is unavailable or the context is lost. Menus and race lanes use lightweight human SVG portraits.
+
+Upgrade feedback appears briefly as a toast without pushing the play area down. Existing version-1 profiles, aliases, worlds, cosmetics and progression remain compatible. Browser tests exercise real WebGL using Chromium's software renderer, in addition to the fallback. Physical-device GPU performance is not certified by those checks.
 
 ## Validate
 
@@ -139,7 +145,7 @@ npm run check            # All of the above
 
 Browser tests use `/usr/bin/chromium` when present, otherwise Playwright's managed Chromium. Install it with `npx playwright install chromium` if necessary, or set `CHROMIUM_PATH` to your Chromium executable. Linux may also need browser system dependencies (`npx playwright install-deps chromium`, with appropriate OS permissions). Browser tests build and start a dedicated production server on port **4174**, use 3-second races, a 0.5-second countdown and 2-second grace for speed, and shut it down afterward. Keep that port free. Unit/room tests also check the default 45-second rules using a deterministic server clock, including exhaustion at 50 seconds in a longer race.
 
-`tests/browser/game.spec.ts` contains **test-only local-save fixtures** for the late-game thresholds. They are not bundled into production, provide no production cheat controls, and never post global scores. Solo browser tests use a controlled browser clock; multiplayer tests use actual independent clients, real sockets, and server time. Browser visibility checks dispatch the visibility event explicitly; there is also a full-duration manual headless check described in `VERIFICATION.md`.
+`tests/browser/game.spec.ts` contains **test-only local-save fixtures** for the late-game thresholds. They are not bundled into production, provide no production cheat controls, and never post global scores. Solo browser tests advance a controlled browser clock in elapsed-time steps (without drawing every skipped frame); multiplayer tests use actual independent clients, real sockets, and server time. Browser visibility checks dispatch the visibility event explicitly; there is also a full-duration manual headless check described in `VERIFICATION.md`.
 
 Screenshots/traces are generated under ignored `test-results/`. See **`VERIFICATION.md`** for the checks performed and their limits. Physical-device LAN and hosted internet verification are separate from localhost multi-client verification.
 
@@ -149,8 +155,12 @@ Screenshots/traces are generated under ignored `test-results/`. See **`VERIFICAT
 - `shared/game.ts`: pure active-time solo simulation, sequential upgrades, save validation, local ranking.
 - `shared/protocol.ts`: shared room and wire-message types.
 - `src/storage.ts`: resilient versioned browser persistence.
-- `src/art.ts`, `src/style.css`: illustrated stickmen/worlds, bold responsive game UI, limb animation.
-- `src/scenery.ts`: seamless parallax layers driven by active run time, with pause/resume and reduced-motion support.
+- `src/art.ts`, `src/style.css`: scene shell, human previews, game UI and fallback animation.
+- `src/scenery.ts`: lazy 3D lifecycle, active-time movement, reduced motion, and fallback.
+- `src/graphics/world.ts`: WebGL world, terrain, trees, lighting, shadows and responsive camera.
+- `src/graphics/human.ts`: articulated human model, two-bone legs, running pose and accessories.
+- `src/graphics/motion.ts`: shared visual trail speed and ground-contact gait.
+- `src/graphics/textures.ts`, `src/graphics/avatar.ts`: generated textures and human SVG portraits.
 - `src/main.ts`: solo state machine, panels, accessible controls, live race presentation.
 - `src/network.ts`: WebSocket intentions/snapshots, private session persistence, reconnection.
 - `server/rooms.ts`: authoritative room lifecycle, timing, distances, energy, host transfer, results.

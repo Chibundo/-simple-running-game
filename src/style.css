@@ -383,3 +383,22 @@ dialog { font-family: inherit; border: 2px solid #29483c; border-radius: 22px; b
   .intro .world-pill > .icon { height: 20px; width: 20px; }
   .earned-stat > strong { font-size: 25px; }
 }
+/* The WebGL scene shares the same accessible HUD and game controls. */
+.world-canvas { position: absolute; inset: 0; z-index: 9; display: block; width: 100%; height: 100%; }
+.scene[data-renderer="webgl"] .scenery-layer,
+.scene[data-renderer="webgl"] .track,
+.scene[data-renderer="webgl"] .runner,
+.scene[data-renderer="webgl"] .sky-grain,
+.scene[data-renderer="webgl"] .sun,
+.scene[data-renderer="webgl"] .moon { visibility: hidden; }
+.scene[data-renderer="webgl"] { background: #a5b8ae; }
+.scene-label, .scene-caption { backdrop-filter: blur(8px); }
+.scene-bottom > span { background: #172c27db; backdrop-filter: blur(8px); }
+.human-avatar .front-leg, .human-avatar .back-leg { transform-origin: 49px 111px; }
+.human-avatar .front-arm, .human-avatar .back-arm { transform-origin: 55px 58px; }
+.sun:before, .sun:after, .sun > span { display: none; }
+.sun { border: 0; box-shadow: 0 0 28px 15px #ffefc682; background: #fff4d1; }
+.brand-mark { background: #e2e9da; transform: none; box-shadow: none; border-color: #738b77; }
+@media (prefers-reduced-motion: reduce) {
+  .human-avatar .front-leg, .human-avatar .back-leg { transform: none !important; }
+}

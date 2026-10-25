@@ -6,12 +6,24 @@ A clean lockfile installation (`npm ci --cache /workspace/.npm-cache --no-audit 
 
 The final `npm run check` completed with:
 
-- **21/21 unit and integration tests passed**, no failures or skips.
-- **17/17 Chromium browser tests passed**, no failures or skips.
+- **22/22 unit and integration tests passed**, no failures or skips.
+- **18/18 Chromium browser tests passed**, no failures or skips.
 - **TypeScript checking passed** for frontend, shared logic, server, configurations, and tests.
-- **Vite production build passed** (about 41.4 kB JavaScript and 31.6 kB CSS before gzip, plus HTML).
+- **Vite production build passed** (about 44.8 kB main JavaScript, 552.3 kB lazy 3D JavaScript, and 32.8 kB CSS before gzip, plus HTML).
 
 The browser test command builds and runs the production HTTP/WebSocket server on port 4174. It uses real, independent browser contexts connected to that server, with shortened race settings (3 seconds, 0.5-second countdown, 2-second reconnect grace). No fake opponents or client-calculated final results are used.
+
+## Current 3D graphics verification
+
+The latest `npm run check` passed all **40 checks**: 22 unit/integration and 18 browser tests. The human's stance and swing are matched to visual trail speed; a pure test verifies that planted feet remain anchored to the moving ground at all 10 speed levels. No progression or server race rules changed.
+
+Browser checks use real WebGL2 with Chromium's software renderer. They verify visible scene pixel changes during running, stable paused rendering, faster world movement at higher speeds under an equal frozen clock, responsive canvas sizes, stationary 3D rendering for reduced motion, and successful fallback to the animated human when a WebGL context is lost. Existing saved cosmetics, progression, keyboard controls, independent browser races, host departure, reconnection and backend-failure checks also passed.
+
+Graphics warmup/rendering is deferred while the multiplayer panel is open. This prevents shader compilation from competing with the short reconnect deadline used in the test suite. Late-join verification preloads the join screen so the host leaves during the deliberately short race, rather than after it has finished. Browser workers were reduced to two for software rendering, and solo tests advance elapsed time without drawing all skipped frames.
+
+Desktop and phone captures of the daylight and twilight worlds use test-only saved profiles with human cosmetics. Evidence is in `/workspace/scratch/running-game-realistic/`. The 3D main play world uses original generated geometry/textures; menu/race portraits and the unsupported-WebGL fallback use human SVGs. See `ASSETS.md` for provenance.
+
+Vite reports a size warning for the approximately 552 kB graphics chunk (about 141 kB if gzipped). It is loaded separately from the controls and uses hashed asset caching. This is a build warning, not a test failure. The renderer caps frame rate and pixel ratio; software-renderer checks do **not** certify frame rates on physical phones. Hosted HTTPS/WSS and physical-device testing remain outside the checks performed here.
 
 ## Coverage
 
@@ -34,8 +46,9 @@ The browser test command builds and runs the production HTTP/WebSocket server on
 | Room lifecycle | Invalid/full/expired rooms; empty/idle cleanup; result rows retained after departures; departed slots cleared for the next lobby |
 | Transport | Real sockets reject forged results/distances, invalid JSON, unauthorized actions, excessive message rates, oversized payloads, and unrelated browser origins |
 | Recovery | Backend outage shows a useful error and leaves solo play available |
+| 3D graphics | Human runner, changing rendered pixels, pause/resume, faster travel, responsive camera/canvas, reduced motion, WebGL-loss fallback, and planted-foot anchoring |
 
-## Redesign and scenery checks — 25 October
+## Earlier 2D redesign baseline — 25 October
 
 The play screen now uses a larger illustrated stage, bolder typography, brighter controls, more detailed day/night worlds, and a compact mobile layout. A new renderer scrolls five seamless scenery layers plus road details from active run time/distance; it does not depend on repeating CSS scenery animations.
 

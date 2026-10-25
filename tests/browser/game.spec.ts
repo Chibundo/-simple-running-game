@@ -27,18 +27,18 @@ async function readyAndStart(pa:Page,pb:Page){
 test('fresh state, automatic earnings, pause, panel pause/resume and exhaustion',async({page})=>{
   await page.clock.install();await page.goto('/');
   await expect(page.locator('#speed')).toHaveText('1');await expect(page.locator('#earned')).toHaveText('0');await expect(page.locator('#energy')).toHaveText('100 / 100');
-  await page.getByRole('button',{name:'Start running',exact:true}).click();await page.clock.runFor(6000);
+  await page.getByRole('button',{name:'Start running',exact:true}).click();await page.clock.fastForward(6000);
   expect(Number((await page.locator('#earned').innerText()).replaceAll(',',''))).toBeGreaterThanOrEqual(119);
   await page.getByRole('button',{name:'Pause',exact:true}).click();const earned=await page.locator('#earned').innerText();
-  await page.clock.runFor(5000);await expect(page.locator('#earned')).toHaveText(earned);
+  await page.clock.fastForward(5000);await expect(page.locator('#earned')).toHaveText(earned);
   await page.getByRole('button',{name:'Make it yours'}).click();await page.getByRole('button',{name:'Done',exact:true}).click();
   await expect(page.locator('#status')).toHaveText('Taking a breather');
-  await page.getByRole('button',{name:'Resume',exact:true}).click();await page.clock.runFor(1000);
+  await page.getByRole('button',{name:'Resume',exact:true}).click();await page.clock.fastForward(1000);
   await page.getByRole('button',{name:'Make it yours'}).click();const stopped=await page.locator('#earned').innerText();
-  await page.clock.runFor(3000);await expect(page.locator('#earned')).toHaveText(stopped);
+  await page.clock.fastForward(3000);await expect(page.locator('#earned')).toHaveText(stopped);
   await page.getByRole('button',{name:'Done',exact:true}).click();await expect(page.locator('#status')).toHaveText('Finding your stride');
-  await page.clock.runFor(44000);await expect(page.locator('#status')).toHaveText('Phew! Time to recharge.');
-  await page.clock.runFor(2000);await expect(page.locator('#energy')).toHaveText('100 / 100');await expect(page.locator('#earned')).toHaveText('1,000');await expect(page.locator('#distance')).toHaveText('0.0 m');
+  await page.clock.fastForward(44000);await expect(page.locator('#status')).toHaveText('Phew! Time to recharge.');
+  await page.clock.fastForward(2000);await expect(page.locator('#energy')).toHaveText('100 / 100');await expect(page.locator('#earned')).toHaveText('1,000');await expect(page.locator('#distance')).toHaveText('0.0 m');
   await page.reload();await expect(page.locator('#earned')).toHaveText('1,000');await expect(page.locator('#status')).toHaveText('Ready when you are');
 });
 test('99 earned MPH keeps the first upgrade locked',async({page})=>{
@@ -69,12 +69,12 @@ test('cosmetics persist without stat effects, profiles are independent and alias
   await page.getByRole('button',{name:'Close panel'}).click();await page.getByRole('button',{name:/Your personal best/}).click();await expect(page.locator('.leader-row')).toHaveCount(2);await expect(page.locator('.rank')).toHaveText(['1','1']);
 });
 test('hidden-tab notification pauses solo and requires explicit resume',async({page})=>{
-  await page.clock.install();await page.goto('/');await page.getByRole('button',{name:'Start running',exact:true}).click();await page.clock.runFor(2000);
+  await page.clock.install();await page.goto('/');await page.getByRole('button',{name:'Start running',exact:true}).click();await page.clock.fastForward(2000);
   await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'));});
-  const earned=await page.locator('#earned').innerText();await page.clock.runFor(12000);await expect(page.locator('#earned')).toHaveText(earned);
+  const earned=await page.locator('#earned').innerText();await page.clock.fastForward(12000);await expect(page.locator('#earned')).toHaveText(earned);
   await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,value:false});document.dispatchEvent(new Event('visibilitychange'));});
-  await page.clock.runFor(3000);await expect(page.locator('#status')).toHaveText('Taking a breather');await expect(page.locator('#earned')).toHaveText(earned);
-  await page.getByRole('button',{name:'Resume',exact:true}).click();await page.clock.runFor(1000);expect(await page.locator('#earned').innerText()).not.toBe(earned);
+  await page.clock.fastForward(3000);await expect(page.locator('#status')).toHaveText('Taking a breather');await expect(page.locator('#earned')).toHaveText(earned);
+  await page.getByRole('button',{name:'Resume',exact:true}).click();await page.clock.fastForward(1000);expect(await page.locator('#earned').innerText()).not.toBe(earned);
 });
 test('corrupt or inaccessible storage still permits a run',async({browser})=>{
   for(const unavailable of [false,true]){
@@ -84,7 +84,7 @@ test('corrupt or inaccessible storage still permits a run',async({browser})=>{
       else localStorage.setItem(key,'corrupt data');
     },{unavailable,key});
     await page.clock.install();await page.goto('/');await expect(page.locator('#storage-warning')).toBeVisible();
-    await page.getByRole('button',{name:'Start running',exact:true}).click();await page.clock.runFor(1200);expect(Number(await page.locator('#earned').innerText())).toBeGreaterThan(0);
+    await page.getByRole('button',{name:'Start running',exact:true}).click();await page.clock.fastForward(1200);expect(Number(await page.locator('#earned').innerText())).toBeGreaterThan(0);
     await context.close();
   }
 });
@@ -139,7 +139,8 @@ test('reload reconnects the same runner and hidden tabs and closed panels do not
 test('departing host cannot stop race; late join is a spectator, and invalid rooms give useful errors',async({browser})=>{
   const {a,b,pa,pb,code}=await pair(browser);const c=await browser.newContext(),pc=await c.newPage();
   try{
-    await readyAndStart(pa,pb);await join(pc,code,'Cedar');await expect(pc.getByText(/You joined after the start/)).toBeVisible();
+    await pc.goto('/?room='+code);await pc.getByLabel('Your racing alias').fill('Cedar');
+    await readyAndStart(pa,pb);await pc.getByRole('button',{name:'Join Race',exact:true}).click();await expect(pc.getByText(/You joined after the start/)).toBeVisible();
     await pa.getByRole('button',{name:'Leave Room',exact:true}).click();
     await expect(pb.locator('#dialog-title')).toHaveText('What a little race!');await expect(pb.locator('.lane-label')).toContainText(['finished','forfeited','spectating']);
     await pc.getByRole('button',{name:'Leave Room',exact:true}).click();await pc.getByLabel('Invitation code').fill('XXXXXXXX');await pc.getByRole('button',{name:'Join Race',exact:true}).click();await expect(pc.locator('#race-error')).toContainText('Room not found');

@@ -1,4 +1,5 @@
-import { GAME, type Cosmetics } from '../shared/config';
+import { type Cosmetics } from '../shared/config';
+import { humanAvatar } from './graphics/avatar';
 export const escape = (v: unknown) => String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 export function icon(name: string) {
   const paths: Record<string, string> = {
@@ -12,18 +13,9 @@ export function icon(name: string) {
   };
   return `<svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] ?? paths.star}</svg>`;
 }
+/** Kept as an internal compatibility name for existing menu render calls. */
 export function stickman(look: Cosmetics, className = '') {
-  const color = GAME.colors.find(c => c.id === look.color)?.value ?? GAME.colors[0].value;
-  return `<svg class="stickman ${className}" viewBox="0 0 100 140" aria-hidden="true" style="color:${color}">
-  <ellipse class="shadow" cx="50" cy="132" rx="25" ry="4" fill="#1d393d" opacity=".12"/>
-  <g class="body" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
-  <g class="back-leg"><path d="M50 80 37 105 26 128"/></g><g class="back-arm"><path d="M50 51 34 69 21 64"/></g>
-  <path d="M50 43v37"/><g class="front-leg"><path d="m50 80 17 22 9 26"/></g><g class="front-arm"><path d="m50 51 18 14 13-11"/></g>
-  <g class="head"><circle cx="50" cy="27" r="16" fill="#fffdf4"/><path d="M52 25h.1M61 25h.1" stroke-width="3"/><path d="M52 33q5 5 10-1" stroke-width="2"/>
-  ${look.hat === 'cap' ? '<path d="M33 23q0-22 32-10v10H29" fill="#e99d55" stroke="#b96629" stroke-width="3"/>' : look.hat === 'crown' ? '<path d="m33 16-1-14 12 8 7-10 7 10 12-8-3 14z" fill="#efbe53" stroke="#b17d29" stroke-width="2"/>' : ''}
-  ${look.glasses === 'round' ? '<circle cx="44" cy="26" r="6" stroke-width="2"/><circle cx="59" cy="26" r="6" stroke-width="2"/><path d="M50 26h3" stroke-width="2"/>' : look.glasses === 'sun' ? '<path d="M37 22h27v8H37z" fill="#263e3c" stroke-width="2"/>' : ''}</g>
-  ${look.outfit === 'scarf' ? '<path d="M43 45h14l10 14-9 2-8-13" fill="#e48460" stroke="#c76546" stroke-width="3"/>' : look.outfit === 'jersey' ? '<path d="m41 47 18 0-1 25H42z" fill="#91b3c5" stroke-width="2"/>' : ''}
-  </g></svg>`;
+  return humanAvatar(look, className);
 }
 const TILE_WIDTH = 960;
 
@@ -67,7 +59,7 @@ export function scene() {
     <g stroke="var(--grass-blade)" stroke-width="3" stroke-linecap="round" fill="none"><path d="m80 386-4-14m5 14 8-9m234 11-5-16m5 16 7-11m270 7-4-15m4 15 9-10m240 11-5-15m5 15 7-9"/></g>
     <g fill="var(--flower-petal)"><path d="M220 382c-15-10-4-17 1-9 4-12 16-6 9 2 13 1 10 14 0 8-1 11-14 8-10-1"/><path d="M740 385c-15-10-4-17 1-9 4-12 16-6 9 2 13 1 10 14 0 8-1 11-14 8-10-1"/></g><g fill="#ffc261"><circle cx="225" cy="379" r="3"/><circle cx="745" cy="382" r="3"/></g>
     <g fill="var(--stone)"><path d="m420 387 5-7 12 1 8 7z"/><path d="m890 393 5-8 14-2 9 10z"/></g>`);
-  return `<div class="scene meadow ready" id="scene" role="img" aria-label="Stickman on a sunny meadow running track">
+  return `<div class="scene meadow ready" id="scene" role="img" aria-label="Runner on a scenic outdoor trail">
     <div class="sky-grain"></div><div class="sun"><span></span></div><div class="moon"></div>
     ${clouds}${mountains}${hills}${trees}
     <div class="track"><div class="track-dashes"></div><div class="track-specks"></div></div>
