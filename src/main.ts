@@ -4,6 +4,7 @@ import { advance, cleanAlias, newProfile, newRun, nextUpgrade, ranking, upgrade,
 import { load, persist, type StorageLike } from './storage';
 import { icon, stickman, scene, escape as e } from './art';
 import { RaceConnection } from './network';
+import { Scenery } from './scenery';
 const $ = <T extends HTMLElement = HTMLElement>(s: string) => document.querySelector<T>(s)!;
 const number = (n: number) => Math.floor(n + 1e-7).toLocaleString('en-US');
 let storage: StorageLike;
@@ -18,24 +19,29 @@ let resumeOnClose = false;
 let previous = performance.now(), lastSave = previous;
 let tiredAt = 0;
 let notice = '';
+let noticeTimer: ReturnType<typeof setTimeout>;
 let renderedRoomKey = '';
 const p = () => save.profiles.find(p => p.id === save.active)!;
 function commit() { if (!persist(storage, save)) storageWarning = true; }
 let race: RaceConnection;
 const app = $('#app');
 app.innerHTML = `
-<header class="site-header"><a class="brand" href="./" aria-label="Simple Running Game home"><span class="brand-mark">${stickman(p().look)}</span><span>SIMPLE<br>RUNNING GAME<span class="brand-dot">.</span></span></a><div class="header-right"><span class="tagline">A little run goes a long way.</span><button class="profile-button" data-action="profiles">${icon('people')}<span id="profile-name"></span></button><button class="icon-button" aria-label="Settings and help" data-action="settings">${icon('settings')}</button></div></header>
-<main><section class="intro"><div><div class="eyebrow"><span></span> ONE STEP AT A TIME</div><h1>Small steps. <em>Big adventures.</em></h1><p>Your own pace. Your own little world. Let’s see how far you go.</p></div><button class="world-pill" data-action="worlds" aria-label="Tier and worlds" title="Choose a world">${icon('mountain')}<span id="world-name"></span><span>⌄</span></button></section>
+<header class="site-header"><a class="brand" href="./" aria-label="Simple Running Game home"><span class="brand-mark">${stickman(p().look)}</span><span>SIMPLE<br>RUNNING GAME<span class="brand-dot">.</span></span></a><div class="header-right"><button class="header-race" data-action="multiplayer">${icon('people')} Race with friends</button><button class="profile-button" data-action="profiles">${icon('people')}<span id="profile-name"></span></button><button class="icon-button" aria-label="Settings and help" data-action="settings">${icon('settings')}</button></div></header>
+<main><section class="intro"><div><div class="eyebrow"><span></span> A SMALL RUN. A BIG ADVENTURE.</div><h1>READY. SET. <em>RUN.</em></h1><p>Find your stride. Get a little faster. Make it your world.</p></div><button class="world-pill" data-action="worlds" aria-label="Tier and worlds" title="Choose a world">${icon('mountain')}<span id="world-name"></span><span>⌄</span></button></section>
 <div id="storage-warning" class="notice" role="status" hidden></div><div id="notice" class="notice" role="status" hidden></div>
 <section class="game-layout" aria-label="Your running game"><div class="run-card"><div class="stat-strip"><div class="stat"><span>RUNNING SPEED</span><strong><b id="speed">1</b><small>MPH</small></strong></div><div class="stat earned-stat"><span>EARNED MPH ${icon('star')}</span><strong id="earned">0</strong></div><div class="energy-stat"><div><span>${icon('bolt')} ENERGY</span><strong id="energy">100 / 100</strong></div><div class="meter" role="progressbar" aria-label="Energy" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><i id="energy-fill"></i></div></div></div>
 ${scene()}
 <div class="run-controls"><div class="run-feedback"><span class="status-dot" id="status-dot"></span><div><strong id="status">Ready when you are</strong><small id="run-help">Press Start. Your stickman does the rest.</small></div></div><div class="run-actions"><button class="button secondary" id="pause" data-action="pause" hidden>${icon('pause')} Pause</button><button class="button primary" id="start" data-action="start">${icon('play')} Start running</button></div></div></div>
-<aside class="upgrade-card"><div class="eyebrow">A LITTLE FASTER, A LITTLE FURTHER</div><div class="upgrade-heading"><h2>Your next step</h2><span class="round-icon">${icon('bolt')}</span></div><div class="next-speed"><strong id="next-speed">2</strong><span>MPH<br><small>running speed</small></span></div><p id="upgrade-caption">Big things start with a little progress.</p><div class="upgrade-progress"><div><span>Earned MPH</span><strong id="threshold-progress"></strong></div><div class="meter"><i id="upgrade-fill"></i></div><small id="upgrade-remaining"></small></div><button class="button upgrade-button" data-action="upgrade" id="upgrade-open">${icon('bolt')}<span id="upgrade-label">View upgrade</span>${icon('arrow')}</button><p class="tiny">Progress is yours to keep. <br>Upgrades never spend your earned MPH.</p></aside></section>
+<aside class="upgrade-card"><div class="eyebrow">THE NEXT LEVEL</div><div class="upgrade-heading"><h2>A little more <em>zoom.</em></h2><span class="round-icon">${icon('bolt')}</span></div><div class="next-speed"><strong id="next-speed">2</strong><span>MPH<br><small>running speed</small></span></div><p id="upgrade-caption">More speed. Bigger adventures.</p><div class="speed-sticker" aria-hidden="true">${icon('bolt')}<span>LET’S<br>GO!</span></div><div class="upgrade-progress"><div><span>Earned MPH</span><strong id="threshold-progress"></strong></div><div class="meter"><i id="upgrade-fill"></i></div><small id="upgrade-remaining"></small></div><button class="button upgrade-button" data-action="upgrade" id="upgrade-open">${icon('bolt')}<span id="upgrade-label">View upgrade</span>${icon('arrow')}</button><p class="tiny">Your earned MPH stays yours. Always.</p><button class="world-teaser" data-action="worlds"><span class="teaser-art" aria-hidden="true">☾<i></i></span><span><small>UP NEXT · WORLD 02</small><strong>Twilight Trails</strong><span id="next-world-state">10 MPH + 100,000 earned MPH</span></span>${icon('arrow')}</button></aside></section>
 <nav class="quick-actions" aria-label="Game activities"><button data-action="customise"><span class="action-icon peach">${icon('shirt')}</span><span><strong>Make it yours</strong><small>Customise your stickman</small></span>${icon('arrow')}</button><button data-action="worlds"><span class="action-icon lavender">${icon('mountain')}</span><span><strong>A world of possibility</strong><small>Explore your worlds</small></span>${icon('arrow')}</button><button data-action="leaderboard"><span class="action-icon yellow">${icon('trophy')}</span><span><strong>Your personal best</strong><small>Leaderboard · on this device</small></span>${icon('arrow')}</button><button data-action="multiplayer"><span class="action-icon mint">${icon('people')}</span><span><strong>Better together</strong><small>Race with friends</small></span>${icon('arrow')}</button></nav>
-<section class="bottom-row"><div class="journey"><span class="little-flag">${icon('flag')}</span><div><span class="eyebrow">THE JOURNEY IS THE FUN PART</span><p>Run. Recharge. Take your next step.</p></div><div class="journey-steps"><span>1 <small>Start</small></span><i></i><span>2 <small>Earn MPH</small></span><i></i><span>3 <small>Upgrade</small></span></div></div><button class="help-link" data-action="settings">New here? <u>How to play ↗</u></button></section></main>
-<footer><span>Made for little runners with big imaginations.</span><span>NO RUSH. JUST RUN. <span class="footer-sun">☀</span></span></footer>
+<section class="bottom-row"><div class="journey"><span class="little-flag">${icon('flag')}</span><div><span class="eyebrow">YOUR GAME. YOUR PACE.</span><p>Run → Recharge → Level up → Repeat.</p></div><div class="journey-steps"><span>1 <small>Start</small></span><i></i><span>2 <small>Earn MPH</small></span><i></i><span>3 <small>Upgrade</small></span></div></div><button class="help-link" data-action="settings">New here? <u>How to play ↗</u></button></section></main>
+<footer><span>Made for little runners with big imaginations.</span><span>LITTLE LEGS. BIG ENERGY. <span class="footer-sun">☀</span></span></footer>
 <dialog id="dialog" aria-labelledby="dialog-title"><div class="dialog-header"><div><span class="eyebrow" id="dialog-eyebrow">YOUR LITTLE ADVENTURE</span><h2 id="dialog-title"></h2></div><button class="icon-button" aria-label="Close panel" data-action="close">${icon('close')}</button></div><div id="panel-body"></div></dialog>`;
-function showNotice(message: string) { notice = message; update(); }
+const scenery = new Scenery($('#scene'));
+function showNotice(message: string) {
+  clearTimeout(noticeTimer); notice = message; update();
+  noticeTimer = setTimeout(() => { notice = ''; update(); }, 4000);
+}
 function openPanel(name: string) {
   if (run.phase === 'running') { run.phase = 'paused'; resumeOnClose = true; commit(); }
   panel = name; renderedRoomKey = ''; renderPanel();
@@ -59,9 +65,9 @@ function update() {
   $('#scene').style.setProperty('--pace', `${Math.max(.8, 2 / Math.sqrt(player.speed))}s`);
   $('#scene').setAttribute('aria-label', `${player.alias}, ${run.phase === 'running' ? 'running' : run.phase}, in ${GAME.worlds.find(w => w.id === player.world)!.name}`);
   $('#scene-world').textContent = GAME.worlds.find(w => w.id === player.world)!.name.toUpperCase();
-  $('#scene-caption').textContent = run.phase === 'running' ? 'Look at you go!' : run.phase === 'tired' ? 'A well-earned rest.' : run.phase === 'paused' ? 'Take your time.' : 'A fresh start awaits.';
+  $('#scene-caption').textContent = run.phase === 'running' ? '● ON THE MOVE' : run.phase === 'tired' ? 'PHEW! RECHARGING…' : run.phase === 'paused' ? 'Ⅱ PAUSED · PRESS RESUME' : 'READY TO ROLL';
   $('#distance').textContent = `${run.distance.toFixed(1)} m`;
-  $('#run-label').textContent = run.phase === 'ready' ? 'YOUR LITTLE ADVENTURE' : `${run.seconds.toFixed(0)}s · +${number(run.earned)} EARNED MPH`;
+  $('#run-label').textContent = run.phase === 'ready' ? 'YOUR NEXT ADVENTURE STARTS HERE' : `${run.seconds.toFixed(0)}s · +${number(run.earned)} EARNED MPH`;
   const running = run.phase === 'running', paused = run.phase === 'paused', tired = run.phase === 'tired';
   $('#status').textContent = tired ? 'Phew! Time to recharge.' : running ? 'Finding your stride' : paused ? 'Taking a breather' : busy ? 'Your race room is open' : 'Ready when you are';
   $('#status-dot').classList.toggle('active', running);
@@ -70,7 +76,9 @@ function update() {
   start.hidden = running || tired; start.disabled = busy;
   start.innerHTML = paused ? `${icon('play')} Resume` : `${icon('play')} Start running`;
   $('#pause').hidden = !running;
-  $('#next-speed').textContent = next ? String(next.speed) : '10';
+  $('#next-speed').textContent = next ? String(next.speed).padStart(2, '0') : '10';
+  $('#next-world-state').textContent = player.unlocked.includes('twilight') ? 'Unlocked. Go explore! ↗' : '10 MPH + 100,000 earned MPH';
+  $('#upgrade-caption').textContent = next ? 'More speed. Bigger adventures.' : 'Top speed. All the good views.';
   $('#threshold-progress').textContent = next ? `${number(player.earned)} / ${number(next.threshold)}` : 'All steps complete';
   $('#upgrade-fill').style.width = `${next ? Math.min(100, player.earned / next.threshold * 100) : 100}%`;
   $('#upgrade-remaining').textContent = !next ? 'Max speed reached. You did it!' : player.earned >= next.threshold ? 'Your next upgrade is ready!' : `${number(Math.ceil(next.threshold - player.earned))} earned MPH to your next step`;
@@ -80,7 +88,7 @@ function update() {
   $('#storage-warning').textContent = 'Saving is unavailable or a saved profile could not be loaded. You can keep playing in this session.';
   $('#notice').hidden = !notice; $('#notice').textContent = notice;
 }
-function renderRunner() { $('#runner').innerHTML = stickman(p().look); }
+function renderRunner() { $('#runner').innerHTML = '<div class="speed-trails" aria-hidden="true"><i></i><i></i><i></i></div>' + stickman(p().look); }
 function title(text: string) { $('#dialog-title').textContent = text; }
 function renderPanel() {
   const player = p(), next = nextUpgrade(player.speed), body = $('#panel-body');
@@ -242,6 +250,7 @@ function frame(now: number) {
   }
   if (now - lastSave > 2000 && run.phase === 'running') { commit(); lastSave = now; }
   if (now - lastDraw >= 80) { update(); lastDraw = now; }
+  scenery.render(run);
   renderRaceMotion(now);
   requestAnimationFrame(frame);
 }

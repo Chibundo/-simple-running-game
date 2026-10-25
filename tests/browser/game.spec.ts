@@ -48,7 +48,7 @@ test('99 earned MPH keeps the first upgrade locked',async({page})=>{
 test('100 earned MPH upgrades exactly one speed and survives reload',async({page})=>{
   await fixture(page,100,1);await page.goto('/');await page.getByRole('button',{name:'Upgrade available',exact:true}).click();await page.getByRole('button',{name:'Upgrade to 2 MPH',exact:true}).click();
   await page.getByRole('button',{name:'Close panel'}).click();await expect(page.locator('#speed')).toHaveText('2');await expect(page.locator('#earned')).toHaveText('100');
-  await page.reload();await expect(page.locator('#speed')).toHaveText('2');await expect(page.locator('#next-speed')).toHaveText('3');
+  await page.reload();await expect(page.locator('#speed')).toHaveText('2');await expect(page.locator('#next-speed')).toHaveText('03');
 });
 test('late-game fixture requires the actual 10 MPH upgrade to enter world two',async({page})=>{
   await fixture(page,100000,9);await page.goto('/');await page.getByRole('button',{name:/A world of possibility/}).click();

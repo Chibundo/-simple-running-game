@@ -1,4 +1,4 @@
-# Verification — 23 October 2026
+# Verification — 25 October 2026
 
 ## Final results
 
@@ -7,9 +7,9 @@ A clean lockfile installation (`npm ci --cache /workspace/.npm-cache --no-audit 
 The final `npm run check` completed with:
 
 - **21/21 unit and integration tests passed**, no failures or skips.
-- **14/14 Chromium browser tests passed**, no failures or skips.
+- **17/17 Chromium browser tests passed**, no failures or skips.
 - **TypeScript checking passed** for frontend, shared logic, server, configurations, and tests.
-- **Vite production build passed** (about 36.6 kB JavaScript and 28.9 kB CSS before gzip, plus HTML).
+- **Vite production build passed** (about 41.4 kB JavaScript and 31.6 kB CSS before gzip, plus HTML).
 
 The browser test command builds and runs the production HTTP/WebSocket server on port 4174. It uses real, independent browser contexts connected to that server, with shortened race settings (3 seconds, 0.5-second countdown, 2-second reconnect grace). No fake opponents or client-calculated final results are used.
 
@@ -35,7 +35,15 @@ The browser test command builds and runs the production HTTP/WebSocket server on
 | Transport | Real sockets reject forged results/distances, invalid JSON, unauthorized actions, excessive message rates, oversized payloads, and unrelated browser origins |
 | Recovery | Backend outage shows a useful error and leaves solo play available |
 
-## Full-duration race check
+## Redesign and scenery checks — 25 October
+
+The play screen now uses a larger illustrated stage, bolder typography, brighter controls, more detailed day/night worlds, and a compact mobile layout. A new renderer scrolls five seamless scenery layers plus road details from active run time/distance; it does not depend on repeating CSS scenery animations.
+
+Three additional browser tests verify meaningful foreground movement at 1 MPH, slower/faster parallax depths, pause/resume without drift, faster scenery at higher speeds, tile coverage after repeated wraps at widths up to 1920 pixels, and stationary scenery with reduced motion while rewards continue. Existing multiplayer, persistence, progression, keyboard and responsive-layout checks also pass.
+
+Desktop and phone captures of both worlds were inspected using existing-save fixtures with 9 MPH / 19,030 earned MPH and 10 MPH / 100,000 earned MPH, including saved cosmetics. No browser page errors were observed. The fixtures are test-only; the production game exposes no cheat controls. Evidence is in `/workspace/scratch/running-game-redesign/` in this environment.
+
+## Full-duration race check — 23 October baseline
 
 A separate headless check used **two isolated Chromium contexts** against the development frontend/proxy and real backend, with the unmodified **45-second race / 3-second countdown / 15-second reconnect grace** defaults.
 

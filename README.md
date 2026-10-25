@@ -121,6 +121,12 @@ No emails, dates of birth, or real names are needed. Use aliases. Solo profiles 
 
 Controls support keyboard, mouse, and touch, visible focus, named controls, modal focus wrapping, numeric energy, text lock states, and reduced-motion preferences. The UI fits phone, tablet, and desktop widths. Artwork is authored SVG/CSS, covered by the repository's MIT license. No remote assets or sound permissions are needed.
 
+## Scene movement
+
+Clouds, distant mountains, hills, trees, and foreground details scroll at different depths. The road and nearby scenery move clearly even at 1 MPH; faster runners increase the visual pace. Rendering follows active run time and distance, so pausing freezes the scene, resuming continues from the same point, and exhaustion returns it to the beginning. Visual screen distance is deliberately exaggerated and does not change actual metres, energy, or earned MPH. Reduced-motion preferences keep the scenery stationary while gameplay continues.
+
+The scene explicitly labels a paused run. Upgrade feedback appears briefly as a toast without pushing the play area down. Existing version-1 profiles, aliases, cosmetics, worlds and progression remain compatible.
+
 ## Validate
 
 ```sh
@@ -143,7 +149,8 @@ Screenshots/traces are generated under ignored `test-results/`. See **`VERIFICAT
 - `shared/game.ts`: pure active-time solo simulation, sequential upgrades, save validation, local ranking.
 - `shared/protocol.ts`: shared room and wire-message types.
 - `src/storage.ts`: resilient versioned browser persistence.
-- `src/art.ts`, `src/style.css`: self-contained stickmen/scenery, animations, responsive layout.
+- `src/art.ts`, `src/style.css`: illustrated stickmen/worlds, bold responsive game UI, limb animation.
+- `src/scenery.ts`: seamless parallax layers driven by active run time, with pause/resume and reduced-motion support.
 - `src/main.ts`: solo state machine, panels, accessible controls, live race presentation.
 - `src/network.ts`: WebSocket intentions/snapshots, private session persistence, reconnection.
 - `server/rooms.ts`: authoritative room lifecycle, timing, distances, energy, host transfer, results.
